@@ -8,16 +8,24 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-#define PORT        8712
+#define PORT        9000
 #define ADDR        "127.0.0.1"
-char *msg = "Hello,World!";
 
+#define HELLOWORLD  "hello world"
 struct msg_t {
-    uint16_t magic;
-    uint16_t port;
-    uint32_t daddr;
-};
-
+    uint16_t    magic;
+    uint16_t    port;
+    uint32_t    daddr;
+    int32_t     PID;
+    int         domainId;
+}__attribute__((aligned(1)));
+void print_bytes(char *data, int len){
+    printf("data:");
+    for(int i = 0; i < len; i++){
+        printf("%02X", (uint8_t)data[i]);
+    }
+    printf("\n");
+}
 void tcp_client(const char *addr, uint16_t port){
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if(fd == -1){
@@ -38,12 +46,26 @@ void tcp_client(const char *addr, uint16_t port){
         printf("error:%s, errno=%d\n", strerror(errno), errno);
         exit(1);
     }
-    int n = write(fd, msg, strlen(msg));
+    char sendBuff[1024] = {0};
+    struct msg_t msg;
+    msg.magic = 0x9527;
+    msg.port = htons(8712);
+    struct in_addr ia;
+    inet_pton(AF_INET, ADDR, &ia);
+    msg.daddr = ia.s_addr;
+    msg.PID = 9999;
+    msg.domainId = 19;
+    int msg_len = sizeof(struct msg_t);
+    printf("msg_len=%d\n", msg_len);
+    memcpy(sendBuff, (void*)&msg, msg_len);
+    memcpy(sendBuff + msg_len, HELLOWORLD, strlen(HELLOWORLD));
+    int sum = msg_len + strlen(HELLOWORLD);
+    int n = write(fd, sendBuff, sum);
     if(n == -1){
         printf("error:%s, errno=%d\n", strerror(errno), errno);
         exit(1);
     }
-    printf("send:%s\n", msg);
+    print_bytes(sendBuff, sum);
     char buff[2048] = {0};
     n = read(fd, buff, sizeof(buff) - 1);
     if(n == -1){
