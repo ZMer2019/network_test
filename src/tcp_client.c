@@ -11,6 +11,13 @@
 #define PORT        8712
 #define ADDR        "127.0.0.1"
 char *msg = "Hello,World!";
+
+struct msg_t {
+    uint16_t magic;
+    uint16_t port;
+    uint32_t daddr;
+};
+
 void tcp_client(const char *addr, uint16_t port){
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if(fd == -1){
