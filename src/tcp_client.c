@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #define PORT        9000
-#define ADDR        "127.0.0.1"
+#define ADDR        "10.10.3.70"
 
 #define HELLOWORLD  "hello world"
 struct msg_t {
@@ -48,19 +48,27 @@ void tcp_client(const char *addr, uint16_t port){
     }
     char sendBuff[1024] = {0};
     struct msg_t msg;
-    msg.magic = 0x9527;
+    msg.magic = htons(9527);
     msg.port = htons(8712);
     struct in_addr ia;
     inet_pton(AF_INET, ADDR, &ia);
     msg.daddr = ia.s_addr;
-    msg.PID = 9999;
-    msg.domainId = 19;
+    msg.PID = htonl(9999);
+    msg.domainId = htonl(19);
     int msg_len = sizeof(struct msg_t);
     printf("msg_len=%d\n", msg_len);
     memcpy(sendBuff, (void*)&msg, msg_len);
     memcpy(sendBuff + msg_len, HELLOWORLD, strlen(HELLOWORLD));
     int sum = msg_len + strlen(HELLOWORLD);
     int n = write(fd, sendBuff, sum);
+    if(n == -1){
+        printf("error:%s, errno=%d\n", strerror(errno), errno);
+        exit(1);
+    }
+    printf("sum=%d\n", sum);
+    print_bytes(sendBuff, sum);
+    sleep(3);
+    n = write(fd, HELLOWORLD, strlen(HELLOWORLD));
     if(n == -1){
         printf("error:%s, errno=%d\n", strerror(errno), errno);
         exit(1);
@@ -78,6 +86,6 @@ void tcp_client(const char *addr, uint16_t port){
 }
 
 int main(int argc, char *argv[]){
-    tcp_client(ADDR, PORT);
+    tcp_client("127.0.0.1", PORT);
     return 0;
 }

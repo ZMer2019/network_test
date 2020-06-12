@@ -39,6 +39,7 @@ void tcp_server(uint16_t port){
             printf("error:%s, errno=%d\n", strerror(errno), errno);
             exit(1);
         }
+        printf("client in\n");
         n = read(conn_fd, buff, sizeof(buff) - 1);
         if(n == -1){
             printf("error:%s, errno=%d\n", strerror(errno), errno);
