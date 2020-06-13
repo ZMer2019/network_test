@@ -8,24 +8,12 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-
+#include <common.h>
 #define ADDR        "10.10.3.70"
 
 #define HELLOWORLD  "hello world"
-struct msg_t {
-    uint16_t    magic;
-    uint16_t    port;
-    uint32_t    daddr;
-    int32_t     PID;
-    int         domainId;
-}__attribute__((aligned(1)));
-void print_bytes(char *data, int len){
-    printf("data:");
-    for(int i = 0; i < len; i++){
-        printf("%02X", (uint8_t)data[i]);
-    }
-    printf("\n");
-}
+
+
 void tcp_client(const char *addr, uint16_t port){
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if(fd == -1){
@@ -67,13 +55,7 @@ void tcp_client(const char *addr, uint16_t port){
     }
     printf("sum=%d\n", sum);
     print_bytes(sendBuff, sum);
-    sleep(3);
-    n = write(fd, HELLOWORLD, strlen(HELLOWORLD));
-    if(n == -1){
-        printf("error:%s, errno=%d\n", strerror(errno), errno);
-        exit(1);
-    }
-    print_bytes(sendBuff, sum);
+
     char buff[2048] = {0};
     n = read(fd, buff, sizeof(buff) - 1);
     if(n == -1){
@@ -86,6 +68,6 @@ void tcp_client(const char *addr, uint16_t port){
 }
 
 int main(int argc, char *argv[]){
-    tcp_client("127.0.0.1", 8712);
+    tcp_client("127.0.0.1", 9000);
     return 0;
 }

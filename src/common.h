@@ -8,9 +8,23 @@
 #include <stdlib.h>
 #include <time.h>
 #include <errno.h>
+#include <stdint.h>
+#include <stdio.h>
 #define TIME_FORMAT                         "%Y-%m-%d %H:%M:%S"
 #define PORT    8712
 #define EVENTS_MAX                          1024
+
+#define TEST_MSG                            "Hello, World!"
+
+struct msg_t {
+    uint16_t    magic;
+    uint16_t    port;
+    uint32_t    daddr;
+    int32_t     PID;
+    int         domainId;
+}__attribute__((aligned(1)));
+
+void print_bytes(char *data, int len);
 
 #define _LOG(color, tag, format, ...)                                       \
 do{                                                                         \

@@ -92,7 +92,7 @@ void server_loop(int listenfd){
     socklen_t len = sizeof(struct sockaddr_in);
     char buff[2048] = {0};
     char ipstr[INET_ADDRSTRLEN] = {0};
-    LOGD("server start, listen:0.0.0.0:%u", PORT);
+    LOGD("server start, listen:0.0.0.0:%u\n", PORT);
     while(1){
         nfds = epoll_wait(epfd, events, EVENTS_MAX, -1);
         if(nfds == -1){
@@ -115,6 +115,7 @@ void server_loop(int listenfd){
             }else{
                 fd = events[i].data.fd;
                 n = read(fd, buff, sizeof(buff) - 1);
+                LOGD("n=%d\n", n);
                 if(n == 0){
                     del_event(epfd, fd);
                     close(fd);
