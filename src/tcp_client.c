@@ -8,7 +8,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-#define PORT        9000
+
 #define ADDR        "10.10.3.70"
 
 #define HELLOWORLD  "hello world"
@@ -86,6 +86,6 @@ void tcp_client(const char *addr, uint16_t port){
 }
 
 int main(int argc, char *argv[]){
-    tcp_client("127.0.0.1", PORT);
+    tcp_client("127.0.0.1", 8712);
     return 0;
 }

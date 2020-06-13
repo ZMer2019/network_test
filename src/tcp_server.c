@@ -12,55 +12,7 @@
 #include <unistd.h>
 #include <common.h>
 #include <sys/epoll.h>
-#include <unistd.h>
 #include <fcntl.h>
-void tcp_server(uint16_t port){
-    int fd = socket(AF_INET, SOCK_STREAM, 0);
-    if(fd == -1){
-        LOGE("error:%s, errno=%d\n", strerror(errno), errno);
-        exit(1);
-    }
-    struct sockaddr_in addr;
-    memset(&addr, 0, sizeof(struct sockaddr_in));
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-
-    int ret = bind(fd, (struct sockaddr*)&addr, sizeof(struct sockaddr_in));
-    if(ret == -1){
-        printf("error:%s, errno=%d\n", strerror(errno), errno);
-        exit(1);
-    }
-    listen(fd, 1024);
-    struct sockaddr_in client;
-    socklen_t len = sizeof(struct sockaddr_in);
-    char buff[2048] = {0};
-    int n;
-    while (1){
-        int conn_fd = accept(fd,(struct sockaddr*)&client, &len);
-        if(conn_fd == -1){
-            printf("error:%s, errno=%d\n", strerror(errno), errno);
-            exit(1);
-        }
-        printf("client in\n");
-        n = read(conn_fd, buff, sizeof(buff) - 1);
-        if(n == -1){
-            printf("error:%s, errno=%d\n", strerror(errno), errno);
-            close(conn_fd);
-            continue;
-        }
-        buff[n] = '\0';
-        printf("recv:%s\n", buff);
-        n = write(conn_fd, buff, n);
-        if(n == -1){
-            printf("error:%s, errno=%d\n", strerror(errno), errno);
-            close(conn_fd);
-        }
-        printf("send:%s\n", buff);
-        close(conn_fd);
-    }
-}
-
 
 
 int server_init(uint16_t port){
@@ -88,6 +40,7 @@ int server_init(uint16_t port){
     }
     return fd;
 }
+
 int add_event(int epfd, int fd){
     struct epoll_event ev;
     ev.data.fd = fd;
@@ -130,21 +83,24 @@ void server_loop(int listenfd){
         LOGE("%s, errno=%d\n", strerror(errno), errno);
         return;
     }
-    int conn, n;
+    int conn, n, fd, nfds;
     if(add_event(epfd, listenfd) != 0){
         return;
     }
     struct epoll_event events[EVENTS_MAX];
     struct sockaddr_in client;
     socklen_t len = sizeof(struct sockaddr_in);
+    char buff[2048] = {0};
+    char ipstr[INET_ADDRSTRLEN] = {0};
+    LOGD("server start, listen:0.0.0.0:%u", PORT);
     while(1){
-        n = epoll_wait(epfd, events, EVENTS_MAX, -1);
-        if(n == -1){
+        nfds = epoll_wait(epfd, events, EVENTS_MAX, -1);
+        if(nfds == -1){
             LOGE("%s, errno=%d\n", strerror(errno), errno);
             LOGD("server exit\n");
             exit(1);
         }
-        for (int i = 0; i < n; i++){
+        for (int i = 0; i < nfds; i++){
             if(events[i].data.fd == listenfd){
                 conn = accept(listenfd, (struct sockaddr*)&client, &len);
                 if(conn == -1){
@@ -155,12 +111,51 @@ void server_loop(int listenfd){
                     close(conn);
                     continue;
                 }
+                add_event(epfd, conn);
+            }else{
+                fd = events[i].data.fd;
+                n = read(fd, buff, sizeof(buff) - 1);
+                if(n == 0){
+                    del_event(epfd, fd);
+                    close(fd);
+                    continue;
+                }
+
+                if(n == -1){
+                    if(errno == EAGAIN){
+                        // todo nonblocking read
+                    }else{
+                        del_event(epfd, fd);
+                        close(fd);
+                        LOGE("%s. errno = %d\n", strerror(errno), errno);
+                    }
+                    continue;
+                }
+                const char* tmp = inet_ntop(AF_INET, (void*)&client.sin_addr, ipstr, INET_ADDRSTRLEN);
+                if(tmp == NULL){
+                    LOGE("%s. errno = %d\n", strerror(errno), errno);
+                    continue;
+                }
+                buff[n] = '\0';
+                LOGD("from %s:%u--->%s\n", ipstr, ntohs(client.sin_port), buff);
+                n = write(fd, buff, n);
+                if(n == -1){
+                    LOGE("%s. errno = %d\n", strerror(errno), errno);
+                    del_event(epfd, fd);
+                    close(fd);
+                    continue;
+                }
+                LOGD("to %s:%u<---%s\n", ipstr,ntohs(client.sin_port), buff);
             }
         }
     }
 }
 
 int main(int argc, char *argv[]){
-    tcp_server(PORT);
+    int listenfd = server_init(PORT);
+    if(listenfd == -1){
+        return -1;
+    }
+    server_loop(listenfd);
     return -1;
 }
