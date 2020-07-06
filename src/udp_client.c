@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#define TEST_ADDR               "192.168.10.23"
+#define TEST_ADDR               "192.168.1.104"
 
 void client(const char* addr, uint16_t port){
     int fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -32,7 +32,7 @@ void client(const char* addr, uint16_t port){
     struct in_addr ia;
     inet_pton(AF_INET, TEST_ADDR, &ia);
     msg.daddr = ia.s_addr;
-    msg.port = htons(9809);
+    msg.port = htons(9000);
     int n = sendto(fd, &msg, sizeof(struct msg_t), 0, (struct sockaddr*)&server, sizeof(struct sockaddr_in));
     if(n == -1){
         LOGE("%s, errno = %d\n", strerror(errno), errno);
@@ -43,24 +43,28 @@ void client(const char* addr, uint16_t port){
     print_bytes((char*)&msg,sizeof(struct msg_t));
 
     char buff[2048] = {0};
-    memcpy(buff, TEST_MSG, strlen(TEST_MSG));
-    n = sendto(fd, buff, strlen(TEST_MSG),0, (struct sockaddr*)&server, sizeof(struct sockaddr_in));
-    if(n == -1){
-        LOGE("%s, errno = %d\n", strerror(errno), errno);
-        close(fd);
-        return;
+    for(int i = 0; i < 10; i++){
+        memcpy(buff, TEST_MSG, strlen(TEST_MSG));
+
+        n = sendto(fd, buff, strlen(TEST_MSG),0, (struct sockaddr*)&server, sizeof(struct sockaddr_in));
+        if(n == -1){
+            LOGE("%s, errno = %d\n", strerror(errno), errno);
+            close(fd);
+            return;
+        }
+        LOGD("sendto:%s\n", buff);
+        struct sockaddr_in client;
+        socklen_t len = sizeof(struct sockaddr_in);
+        n = recvfrom(fd, buff, sizeof(buff)-1, 0, (struct sockaddr*)&client, &len);
+        if(n == -1){
+            LOGE("%s, errno = %d\n", strerror(errno), errno);
+            close(fd);
+            return;
+        }
+        buff[n] = '\0';
+        LOGD("recvfrom:%s\n", buff);
     }
-    LOGD("sendto:%s\n", buff);
-    struct sockaddr_in client;
-    socklen_t len = sizeof(struct sockaddr_in);
-    n = recvfrom(fd, buff, sizeof(buff)-1, 0, (struct sockaddr*)&client, &len);
-    if(n == -1){
-        LOGE("%s, errno = %d\n", strerror(errno), errno);
-        close(fd);
-        return;
-    }
-    buff[n] = '\0';
-    LOGD("recvfrom:%s\n", buff);
+
 }
 
 int main(int argc, char *argv[]){

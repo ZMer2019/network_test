@@ -50,6 +50,6 @@ err_exit:
 }
 
 int main(int argc, char *argv[]){
-    server_loop(PORT);
+    server_loop(9000);
     return 0;
 }
