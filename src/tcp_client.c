@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <common.h>
-#define ADDR        "10.10.3.70"
+
 
 #define HELLOWORLD  "hello world"
 
@@ -34,27 +34,15 @@ void tcp_client(const char *addr, uint16_t port){
         printf("error:%s, errno=%d\n", strerror(errno), errno);
         exit(1);
     }
-    char sendBuff[1024] = {0};
-    struct msg_t msg;
-    msg.magic = htons(9527);
-    msg.port = htons(8712);
-    struct in_addr ia;
-    inet_pton(AF_INET, ADDR, &ia);
-    msg.daddr = ia.s_addr;
-    msg.PID = htonl(9999);
-    msg.domainId = htonl(19);
-    int msg_len = sizeof(struct msg_t);
-    printf("msg_len=%d\n", msg_len);
-    memcpy(sendBuff, (void*)&msg, msg_len);
-    memcpy(sendBuff + msg_len, HELLOWORLD, strlen(HELLOWORLD));
-    int sum = msg_len + strlen(HELLOWORLD);
-    int n = write(fd, sendBuff, sum);
+
+
+    int n = write(fd, HELLOWORLD, strlen(HELLOWORLD));
     if(n == -1){
         printf("error:%s, errno=%d\n", strerror(errno), errno);
         exit(1);
     }
-    printf("sum=%d\n", sum);
-    print_bytes(sendBuff, sum);
+    printf("sum=%d\n", n);
+    print_bytes(HELLOWORLD, n);
 
     char buff[2048] = {0};
     n = read(fd, buff, sizeof(buff) - 1);
@@ -68,6 +56,11 @@ void tcp_client(const char *addr, uint16_t port){
 }
 
 int main(int argc, char *argv[]){
-    tcp_client("127.0.0.1", 9000);
+    if(argc != 3){
+        printf("Example: %s 192.168.1.100 9999\n", argv[0]);
+        return 0;
+    }
+    int port = atoi(argv[2]);
+    tcp_client(argv[1], port);
     return 0;
 }

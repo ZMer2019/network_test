@@ -38,6 +38,7 @@ int server_init(uint16_t port){
         LOGE("error:%s, errno=%d\n", strerror(errno), errno);
         return -1;
     }
+    LOGD("server start, listen:0.0.0.0:%u\n", port);
     return fd;
 }
 
@@ -92,7 +93,6 @@ void server_loop(int listenfd){
     socklen_t len = sizeof(struct sockaddr_in);
     char buff[2048] = {0};
     char ipstr[INET_ADDRSTRLEN] = {0};
-    LOGD("server start, listen:0.0.0.0:%u\n", PORT);
     while(1){
         nfds = epoll_wait(epfd, events, EVENTS_MAX, -1);
         if(nfds == -1){
@@ -153,7 +153,12 @@ void server_loop(int listenfd){
 }
 
 int main(int argc, char *argv[]){
-    int listenfd = server_init(PORT);
+    if(argc != 2){
+        printf("Usage: %s 9999\n", argv[0]);
+        return 0;
+    }
+    int port = atoi(argv[1]);
+    int listenfd = server_init(port);
     if(listenfd == -1){
         return -1;
     }
