@@ -43,7 +43,12 @@ void tcp_client(const char *addr, uint16_t port){
     }
     printf("sum=%d\n", n);
     print_bytes(HELLOWORLD, n);
-
+    n = write(fd, HELLOWORLD, strlen(HELLOWORLD));
+    if(n == -1){
+        printf("error:%s, errno=%d\n", strerror(errno), errno);
+        exit(1);
+    }
+    printf("sum=%d\n", n);
     char buff[2048] = {0};
     n = read(fd, buff, sizeof(buff) - 1);
     if(n == -1){

@@ -48,8 +48,33 @@ void server_loop(uint16_t port){
 err_exit:
     close(fd);
 }
-
+void usage(void) {
+    printf("Usage: udp_client [OPTION]... \n");
+    printf("Options:\n");
+    printf("\t-h, Show this help\n");
+    printf("\t-p, set listen port like 80 ...\n");
+    exit(0);
+}
 int main(int argc, char *argv[]){
-    server_loop(9000);
+    char *port = NULL;
+    char ch;
+    char *end = NULL;
+    while((ch = getopt(argc, argv, "hp:")) != -1) {
+        switch(ch) {
+            case 'p':
+                port = optarg;
+            break;
+            case 'h':
+            default:
+                usage();
+        }
+    }
+    uint16_t dest = strtoul(port, &end, 10);
+    if (*end != '\0') {
+        LOGD("invalid port[%s]\n", port);
+    }else{
+        server_loop(dest);
+    }
+
     return 0;
 }
